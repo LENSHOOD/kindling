@@ -1,0 +1,81 @@
+# Default values for kindling.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+namespace: kindling
+
+traceData:
+  # Options: ["file", "elasticsearch"]
+  storage: "file"
+
+agent:
+  name: "kindling-agent"
+  image:
+    repository: registry.cn-hangzhou.aliyuncs.com/lenshood/kindling-agent
+    pullPolicy: Always
+    tag: "latest"
+  imagePullSecrets:
+    - name: registrypullsecret
+  serviceAccount:
+    annotations: { }
+  securityContext:
+    privileged: true
+  service:
+    type: ClusterIP
+    metrics:
+      port: 9500
+    profile:
+      port: 9503
+    apm:
+      port: 2234
+  resources:
+    limits:
+      memory: 1500Mi
+    requests:
+      memory: 300Mi
+  env:
+    - name: HOST_PROC
+      value: /host/proc
+    - name: PL_HOST_PATH
+      value: /host
+    - name: SYSDIG_HOST_ROOT
+      value: /host
+    - name: SNAPLEN
+      value: "1000"
+    - name: GOGC
+      value: "200"
+    - name: switch_agg_num
+      value: "2"
+    - name: MY_NODE_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.hostIP
+    - name: MY_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+  volumes:
+    - name: shared-data
+      emptyDir: { }
+
+cameraFront:
+  name: "kindling-camera-front"
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 80
+  replicaCount: 1
+  image:
+    repository: kindlingproject/kindling-camera-front
+    pullPolicy: Always
+    tag: "latest"
+  imagePullSecrets: [ ]
+  service:
+    type: ClusterIP
+    port: 9504
+  resources:
+    limits:
+      memory: 300Mi
+    requests:
+      memory: 30Mi

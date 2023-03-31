@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Values.agent.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kindling.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.agent.name }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/name: {{ .Values.agent.name }}
+    spec:
+      {{- with .Values.agent.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.agent.name }}-svc-account
+      containers:
+        - name: {{ .Values.agent.name }}
+          securityContext:
+            {{- toYaml .Values.agent.securityContext | nindent 12 }}
+          image: "{{ .Values.agent.image.repository }}:{{ .Values.agent.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.agent.image.pullPolicy }}
+          ports:
+            - name: "metrics"
+              containerPort: {{ .Values.agent.service.metrics.port }}
+              protocol: TCP
+            - name: "profile"
+              containerPort: {{ .Values.agent.service.profile.port }}
+              protocol: TCP
+            - name: "apm"
+              containerPort: {{ .Values.agent.service.apm.port }}
+              protocol: TCP
+          readinessProbe:
+            exec:
+              command:
+                - cat
+                - /opt/kernel-support
+          resources:
+            {{- toYaml .Values.agent.resources | nindent 12 }}
+          {{- if .Values.agent.env }}
+          env:
+            {{- toYaml .Values.agent.env | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /app/config
+              name: {{ .Values.agent.name }}-config
+            - mountPath: /sys
+              name: sys-vol
+            - mountPath: /etc/modprobe.d
+              name: modprobe-d
+              readOnly: true
+            - mountPath: /host/dev
+              name: dev-vol
+            - mountPath: /host/proc
+              name: proc-vol
+              readOnly: true
+            - mountPath: /host/etc
+              name: etc-vol
+              readOnly: true
+            - mountPath: /host/boot
+              name: boot-vol
+              readOnly: true
+            - mountPath: /host/lib/modules
+              name: modules-vol
+              readOnly: true
+            - mountPath: /host/usr
+              name: usr-vol
+              readOnly: true
+            - mountPath: /host/run
+              name: run-vol
+            - mountPath: /host/var/run
+              name: varrun-vol
+            - mountPath: /dev/shm
+              name: dshm
+          {{- if eq .Values.traceData.storage "file" }}
+            - name: shared-data
+              mountPath: /tmp/kindling
+          {{- end }}
+      restartPolicy: Always
+      volumes:
+        - configMap:
+            defaultMode: 420
+            name: {{ .Values.agent.name }}-config
+          name: {{ .Values.agent.name }}-config
+        - hostPath:
+            path: /etc/modprobe.d
+          name: modprobe-d
+        - emptyDir:
+            medium: Memory
+          name: dshm
+        - hostPath:
+            path: /dev
+          name: dev-vol
+        - hostPath:
+            path: /proc
+          name: proc-vol
+        - hostPath:
+            path: /etc
+          name: etc-vol
+        - hostPath:
+            path: /boot
+          name: boot-vol
+        - hostPath:
+            path: /lib/modules
+          name: modules-vol
+        - hostPath:
+            path: /usr
+          name: usr-vol
+        - hostPath:
+            path: /run
+          name: run-vol
+        - hostPath:
+            path: /var/run
+          name: varrun-vol
+        - hostPath:
+            path: /sys
+          name: sys-vol
+      {{- if eq .Values.traceData.storage "file" }}
+        - name: shared-data
+          hostPath:
+            path: /tmp/kindling/data
+            type: DirectoryOrCreate
+      {{- end }}
+

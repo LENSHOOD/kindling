@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.agent.name }}-svc
+  labels:
+    {{- include "kindling.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.agent.service.type }}
+  ports:
+    - name: "metrics"
+      port: {{ .Values.agent.service.metrics.port }}
+      targetPort: {{ .Values.agent.service.metrics.port }}
+      protocol: TCP
+    - name: "profile"
+      port: {{ .Values.agent.service.profile.port }}
+      targetPort: {{ .Values.agent.service.profile.port }}
+      protocol: TCP
+    - name: "apm"
+      port: {{ .Values.agent.service.apm.port }}
+      targetPort: {{ .Values.agent.service.apm.port }}
+      protocol: TCP
+  selector:
+      app.kubernetes.io/name: {{ .Values.agent.name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cameraFront.name }}-svc
+  labels:
+    {{- include "kindling.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.cameraFront.service.type }}
+  ports:
+    - port: {{ .Values.cameraFront.service.port }}
+      targetPort: {{ .Values.cameraFront.service.port }}
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ .Values.cameraFront.name }}

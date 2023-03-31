@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.agent.name }}-config
+  namespace: {{ .Values.namespace }}
+data:
+{{ (.Files.Glob "config/kindling-collector-config.yml").AsConfig | indent 2 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.cameraFront.name }}-config
+data:
+  settings.js: |
+    const setting = {
+        apmServerConfig: {
+            host: '{{ .Values.agent.name }}-svc',
+            port: '2234',
+        },
+        profileConfig: {
+            host: '{{ .Values.agent.name }}-svc',
+            port: '9503',
+        },
+        traceFilePath: '/tmp/kindling',
+        port: {{ .Values.cameraFront.service.port }},
+    };
+    module.exports = setting;

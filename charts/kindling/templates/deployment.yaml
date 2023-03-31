@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.cameraFront.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kindling.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.cameraFront.autoscaling.enabled }}
+  replicas: {{ .Values.cameraFront.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.cameraFront.name }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/name: {{ .Values.cameraFront.name }}
+    spec:
+      {{- with .Values.cameraFront.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Values.cameraFront.name }}
+          image: "{{ .Values.cameraFront.image.repository }}:{{ .Values.cameraFront.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.cameraFront.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.cameraFront.service.port }}
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.cameraFront.resources | nindent 12 }}
+          volumeMounts:
+          - mountPath: /app/camera-front/node/settings.js
+            name: {{ .Values.cameraFront.name }}-config
+            subPath: settings.js
+          {{- if eq .Values.traceData.storage "file" }}
+          - name: shared-data
+            mountPath: /tmp/kindling
+          {{- end }}
+      volumes:
+        - configMap:
+            name: {{ .Values.cameraFront.name }}-config
+          name: {{ .Values.cameraFront.name }}-config
+      {{- if eq .Values.traceData.storage "file" }}
+        - name: shared-data
+          hostPath:
+            path: /tmp/kindling/data
+            type: DirectoryOrCreate
+      {{- end }}

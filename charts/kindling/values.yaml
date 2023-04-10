@@ -7,6 +7,9 @@ namespace: kindling
 traceData:
   # Options: ["file", "elasticsearch"]
   storage: "file"
+  file:
+    request: 256Mi
+    storageClassName: "longhorn"
 
 agent:
   name: "kindling-agent"

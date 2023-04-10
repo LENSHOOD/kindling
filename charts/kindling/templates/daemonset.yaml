@@ -126,8 +126,7 @@ spec:
           name: sys-vol
       {{- if eq .Values.traceData.storage "file" }}
         - name: shared-data
-          hostPath:
-            path: /tmp/kindling/data
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: {{ .Values.agent.name }}-pvc
       {{- end }}
 

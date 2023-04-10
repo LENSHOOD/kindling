@@ -1,0 +1,15 @@
+{{- if eq .Values.traceData.storage "file" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.agent.name }}-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: {{ .Values.traceData.file.request }}
+  storageClassName: {{ .Values.traceData.file.storageClassName }}
+{{- end }}

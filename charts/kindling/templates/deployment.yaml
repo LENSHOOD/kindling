@@ -14,10 +14,6 @@ spec:
       app.kubernetes.io/name: {{ .Values.cameraFront.name }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
-      annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
       labels:
         app.kubernetes.io/name: {{ .Values.cameraFront.name }}
     spec:
@@ -48,7 +44,6 @@ spec:
           name: {{ .Values.cameraFront.name }}-config
       {{- if eq .Values.traceData.storage "file" }}
         - name: shared-data
-          hostPath:
-            path: /tmp/kindling/data
-            type: DirectoryOrCreate
+          persistentVolumeClaim:
+            claimName: {{ .Values.agent.name }}-pvc
       {{- end }}
